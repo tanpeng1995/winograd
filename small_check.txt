@@ -1,0 +1,8 @@
+Layer 0 : (Channel Height Weight Filter Batch) = (3   10  10  2   2  ) : Validation Passed !
+Layer 1 : (Channel Height Weight Filter Batch) = (3   10  10  10  2  ) : Validation Passed !
+Layer 2 : (Channel Height Weight Filter Batch) = (3   50  50  10  2  ) : Validation Passed !
+Layer 3 : (Channel Height Weight Filter Batch) = (32  50  50  64  2  ) : Validation Passed !
+Layer 4 : (Channel Height Weight Filter Batch) = (32  50  50  64  64 ) : Validation Passed !
+Layer 5 : (Channel Height Weight Filter Batch) = (32  52  50  64  64 ) : Validation Passed !
+Layer 6 : (Channel Height Weight Filter Batch) = (32  52  52  64  64 ) : Validation Passed !
+Layer 7 : (Channel Height Weight Filter Batch) = (32  52  52  63  65 ) : Validation Passed !

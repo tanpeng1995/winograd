@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH --job-name=winograd
+#SBATCH --account=ac_demlbm
+#SBATCH --partition=savio2
+#SBATCH --qos=savio_debug
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --time=00:30:00
+export OMP_NUM_THREADS=4
+module load gcc openmpi
+/global/home/users/tanpeng/winograd-baseline-main/winograd /global/home/users/tanpeng/winograd-baseline-main/small.conf 0
+/global/home/users/tanpeng/winograd-baseline-main/winograd /global/home/users/tanpeng/winograd-baseline-main/small.conf 1
