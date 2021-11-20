@@ -63,7 +63,7 @@ void winconv_6x3(float *__restrict__ image, const int irows, const int icols,
 
 int naive_conv(float *in, float *kn, float *out, const int N, const int C,
                const int H, const int W, const int K) {
-  int inpos, knpos, outpos;
+  long inpos, knpos, outpos;
 
   int dimIn[4] = {N, C, H, W};
   int dimKn[4] = {K, C, 3, 3};
@@ -77,15 +77,15 @@ int naive_conv(float *in, float *kn, float *out, const int N, const int C,
                    dimOut[3]};
 
 #pragma omp parallel for private(inpos, knpos, outpos)
-  for (int inn = 0; inn < dimIn[0]; inn++)
-    for (int knn = 0; knn < dimKn[0]; knn++)
-      for (int inc = 0; inc < dimIn[1]; inc++) {
-        for (int outh = 0; outh < dimOut[2]; outh++)
-          for (int outw = 0; outw < dimOut[3]; outw++) {
+  for (long inn = 0; inn < dimIn[0]; inn++)
+    for (long knn = 0; knn < dimKn[0]; knn++)
+      for (long inc = 0; inc < dimIn[1]; inc++) {
+        for (long outh = 0; outh < dimOut[2]; outh++)
+          for (long outw = 0; outw < dimOut[3]; outw++) {
             outpos =
                 inn * outgap[0] + knn * outgap[1] + outh * outgap[2] + outw;
-            for (int knh = 0; knh < dimKn[2]; knh++)
-              for (int knw = 0; knw < dimKn[3]; knw++) {
+            for (long knh = 0; knh < dimKn[2]; knh++)
+              for (long knw = 0; knw < dimKn[3]; knw++) {
                 inpos = inn * ingap[0] + inc * ingap[1] +
                         (outh + knh) * ingap[2] + (outw + knw);
                 // knpos = knn*kngap[0] + inc*kngap[1] + 8 - (knh*kngap[2] +
@@ -127,7 +127,7 @@ void winograd_conv(const int layer_idx, const int validation_mode,
   M = (float *)mkl_malloc(sizeof(float) * 8 * 8 * K * P, 64);
 
 #pragma omp parallel for private(i)
-  for (long i = 0; i < batch * C * sizeI; i++) image[i] = (float)(i % 10 + 1);
+  for (long i = 0; i < (size_t) batch * C * sizeI; i++) image[i] = (float)(i & 0x100 + 1);
     // image[i] = rand()%10;
 #pragma omp parallel for private(i)
   for (long i = 0; i < K * C * sizeF; i++) filter[i] = (float)(i / sizeF + 1);
@@ -136,8 +136,9 @@ void winograd_conv(const int layer_idx, const int validation_mode,
   // Warm up
   winconv_6x3(image, irows, icols, C, filter, K, batch, out, U, V, M);
   if (validation_mode) {  // Verify mode. Check the result
-    float *out_ref = (float *)malloc(batch * K * sizeO * sizeof(float));
-    memset(out_ref, 0, batch * K * sizeO * sizeof(float));
+    float *out_ref = (float *)malloc(sizeof(float) * batch * K * sizeO );
+    memset(out_ref, 0,sizeof(float) * batch * K * sizeO);
+
 
     naive_conv(image, filter, out_ref, batch, C, irows, icols, K);
     printf(
@@ -145,7 +146,7 @@ void winograd_conv(const int layer_idx, const int validation_mode,
         "(%-3d %-3d %-3d %-3d %-3d) : ",
         layer_idx, C, irows, icols, K, batch);
     long n;
-    for (n = 0; n < batch * sizeO * K; n++)
+    for (n = 0; n < (long) batch * sizeO * K; n++)
       if (fabs((out[n] - out_ref[n]) / out_ref[n]) > 1e-4) {
         printf(
             "Validation Failed ! winogradConv[%d] = %f || directConv[%d] = %f "
@@ -153,7 +154,7 @@ void winograd_conv(const int layer_idx, const int validation_mode,
             n, out[n], n, out_ref[n]);
         break;
       }
-    if (n == batch * sizeO * K) printf("Validation Passed !\n");
+    if (n == (long) batch * sizeO * K) printf("Validation Passed !\n");
     free(out_ref);
   } else {  // Benchmark mode
     double start_time = timestamp();
@@ -217,7 +218,7 @@ int main(int argc, char *argv[]) {
   // srand(time(NULL));
   srand(20210930);
 
-  double total_time = 0.;
+  double total_time = 0.0;
   long total_flops = 0;
 
   long istride;
@@ -228,8 +229,8 @@ int main(int argc, char *argv[]) {
                 &fstride, &ostride);
 
   for (int l = 0; l < layer_num; l++) {
-      winograd_conv(l, validation_mode, H_arr[l], W_arr[l], C_arr[l], K_arr[l],
-          Batch_arr[l], &total_flops, &total_time);
+    winograd_conv(l, validation_mode, H_arr[l], W_arr[l], C_arr[l], K_arr[l],
+                  Batch_arr[l], &total_flops, &total_time);
   }
 
   if (!validation_mode)
